@@ -23,7 +23,17 @@
               <h3>Tambah Kelas Tersedia</h3>
             </div>
             <div class="card-body">
-              <form action="{{ route('kelastersedia.simpan') }}" method="POST">
+              @if ($errors->any())
+                  <div class="alert alert-danger">
+                      <ul>
+                          @foreach ($errors->all() as $error)
+                              <li>{{ $error }}</li>
+                          @endforeach
+                      </ul>
+                  </div>
+              @endif
+
+              <form action="{{ route('kelastersedia.simpan') }}" method="POST" id="kelasForm">
                 @csrf
                 <div class="mb-3">
                   <label for="tahun_ajaran_id" class="form-label">Tahun Ajaran</label>
@@ -38,38 +48,52 @@
                   @enderror
                 </div>
 
-                <div class="mb-3">
-                  <label for="kelas_ids" class="form-label">Kelas</label>
-                  <select name="kelas_ids[]" id="kelas_ids" class="form-control @error('kelas_ids') is-invalid @enderror" multiple>
-                    <option value="">Pilih Kelas</option>
-                    @foreach($kelas as $kls)
-                      <option value="{{ $kls->id }}" data-tingkat="{{ $kls->tingkat }}">
-                        {{ $kls->nama_kelas }} (Tingkat: {{ $kls->tingkat }})
-                      </option>
-                    @endforeach
-                  </select>
-                  @error('kelas_ids')
-                    <div class="invalid-feedback">{{ $message }}</div>
-                  @enderror
+                <div id="kelas-ruangan-container">
+                  <div class="row mb-3">
+                    <div class="col-md-5">
+                      <label for="kelas_ids" class="form-label">Kelas</label>
+                      <select name="kelas_ids[]" class="form-control @error('kelas_ids') is-invalid @enderror" multiple>
+                        <option value="">Pilih Kelas</option>
+                        @foreach($kelas as $kls)
+                          <option value="{{ $kls->id }}" data-tingkat="{{ $kls->tingkat }}">
+                            {{ $kls->nama_kelas }} (Tingkat: {{ $kls->tingkat }})
+                          </option>
+                        @endforeach
+                      </select>
+                      @error('kelas_ids')
+                        <div class="invalid-feedback">{{ $message }}</div>
+                      @enderror
+                    </div>
+
+                    <div class="col-md-5">
+                      <label for="ruangan_ids" class="form-label">Ruangan</label>
+                      <select name="ruangan_ids[]" class="form-control @error('ruangan_ids') is-invalid @enderror" multiple>
+                        <option value="">Pilih Ruangan</option>
+                        @foreach($ruangan as $ruang)
+                          <option value="{{ $ruang->id }}">{{ $ruang->nama_ruangan }}</option>
+                        @endforeach
+                      </select>
+                      @error('ruangan_ids')
+                        <div class="invalid-feedback">{{ $message }}</div>
+                      @enderror
+                    </div>
+
+                    <div class="col-md-2 d-flex align-items-end">
+                      <button type="button" class="btn btn-danger" onclick="removeRow(this)">Hapus</button>
+                    </div>
+                  </div>
                 </div>
 
                 <div class="mb-3">
-                  <label for="ruangan_id" class="form-label">Ruangan</label>
-                  <select name="ruangan_id" id="ruangan_id" class="form-control @error('ruangan_id') is-invalid @enderror">
-                    <option value="">Pilih Ruangan</option>
-                    @foreach($ruangan as $ruang)
-                      <option value="{{ $ruang->id }}">{{ $ruang->nama_ruangan }}</option>
-                    @endforeach
-                  </select>
-                  @error('ruangan_id')
-                    <div class="invalid-feedback">{{ $message }}</div>
-                  @enderror
+                  <button type="button" class="btn btn-primary" onclick="addRow()">Tambah Kelas dan Ruangan</button>
                 </div>
 
+                <!-- Buttons below the dynamically added rows -->
                 <div class="mb-3">
-                  <button type="submit" class="btn btn-primary">Simpan</button>
+                  <button type="submit" class="btn btn-success">Simpan</button>
                   <a href="{{ route('kelastersedia.daftar') }}" class="btn btn-secondary">Kembali</a>
                 </div>
+
               </form>
             </div>
           </div>
@@ -79,4 +103,44 @@
   </section>
 
 </main><!-- End #main -->
+
+<script>
+  function addRow() {
+    const container = document.getElementById('kelas-ruangan-container');
+    const row = document.createElement('div');
+    row.className = 'row mb-3';
+    row.innerHTML = `
+      <div class="col-md-5">
+        <label for="kelas_ids" class="form-label">Kelas</label>
+        <select name="kelas_ids[]" class="form-control" multiple>
+          <option value="">Pilih Kelas</option>
+          @foreach($kelas as $kls)
+            <option value="{{ $kls->id }}" data-tingkat="{{ $kls->tingkat }}">
+              {{ $kls->nama_kelas }} (Tingkat: {{ $kls->tingkat }})
+            </option>
+          @endforeach
+        </select>
+      </div>
+      <div class="col-md-5">
+        <label for="ruangan_ids" class="form-label">Ruangan</label>
+        <select name="ruangan_ids[]" class="form-control" multiple>
+          <option value="">Pilih Ruangan</option>
+          @foreach($ruangan as $ruang)
+            <option value="{{ $ruang->id }}">{{ $ruang->nama_ruangan }}</option>
+          @endforeach
+        </select>
+      </div>
+      <div class="col-md-2 d-flex align-items-end">
+        <button type="button" class="btn btn-danger" onclick="removeRow(this)">Hapus</button>
+      </div>
+    `;
+    container.appendChild(row);
+  }
+
+  function removeRow(button) {
+    const row = button.closest('.row');
+    row.remove();
+  }
+</script>
+
 @endsection

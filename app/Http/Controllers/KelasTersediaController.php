@@ -41,29 +41,37 @@ class KelasTersediaController extends Controller
 {
     $validatedData = $request->validate([
         'tahun_ajaran_id' => 'required|exists:tahun_ajaran,id',
-        'ruangan_id' => 'required|exists:ruangan,id',
         'kelas_ids' => 'required|array',
-        'kelas_ids.*' => 'required|exists:kelas,id',
+        'kelas_ids.*' => 'exists:kelas,id',
+        'ruangan_ids' => 'required|array',
+        'ruangan_ids.*' => 'exists:ruangan,id',
     ]);
 
     $tahunAjaranId = $validatedData['tahun_ajaran_id'];
-    $ruanganId = $validatedData['ruangan_id'];
     $kelasIds = $validatedData['kelas_ids'];
+    $ruanganIds = $validatedData['ruangan_ids'];
 
-    foreach ($kelasIds as $kelasId) {
+    // Menghitung jumlah entri yang akan diproses
+    $jumlahEntries = min(count($kelasIds), count($ruanganIds));
+
+    for ($i = 0; $i < $jumlahEntries; $i++) {
+        $kelasId = $kelasIds[$i];
+        $ruanganId = $ruanganIds[$i];
+        
         $kelas = Kelas::findOrFail($kelasId);
         $tingkat = substr($kelas->nama_kelas, 0, 2);
 
-        // Validasi tingkat untuk memastikan hanya nilai 10, 11, atau 12 yang diterima
         if (!in_array($tingkat, ['10', '11', '12'])) {
             return redirect()->back()->with('error', 'Tingkat tidak valid.');
         }
 
-        KelasTersedia::create([
+        // Simpan atau perbarui entri
+        KelasTersedia::updateOrCreate([
             'tahun_ajaran_id' => $tahunAjaranId,
             'ruangan_id' => $ruanganId,
             'kelas_id' => $kelasId,
-            'tingkat' => $tingkat, // Menyimpan tingkat berdasarkan nama kelas
+        ], [
+            'tingkat' => $tingkat,
         ]);
     }
 
@@ -98,7 +106,7 @@ class KelasTersediaController extends Controller
 
     $kelasTersedia->update(array_merge($validatedData, ['tingkat' => $tingkat]));
 
-    return redirect()->route('kelasTersedia.daftar')->with('success', 'Kelas Tersedia berhasil diperbarui.');
+    return redirect()->route('kelastersedia.daftar')->with('success', 'Kelas Tersedia berhasil diperbarui.');
 }
 
     public function hapusKelasTersedia($id)
@@ -106,6 +114,6 @@ class KelasTersediaController extends Controller
         $kelasTersedia = KelasTersedia::findOrFail($id);
         $kelasTersedia->delete();
 
-        return redirect()->route('kelasTersedia.daftar')->with('success', 'Kelas Tersedia berhasil dihapus.');
+        return redirect()->route('kelastersedia.daftar')->with('success', 'Kelas Tersedia berhasil dihapus.');
     }
 }

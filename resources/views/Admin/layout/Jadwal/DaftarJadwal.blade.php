@@ -29,11 +29,11 @@
       </div>
 
       <div class="col-12 mb-3">
-  <button class="btn btn-secondary me-2" onclick="filterByTingkat(null)">Semua Tingkat</button>
-  <button class="btn btn-secondary me-2" onclick="filterByTingkat(10)">Tingkat 10</button>
-  <button class="btn btn-secondary me-2" onclick="filterByTingkat(11)">Tingkat 11</button>
-  <button class="btn btn-secondary" onclick="filterByTingkat(12)">Tingkat 12</button>
-</div>
+        <button class="btn btn-secondary me-2" onclick="filterByTingkat(null)">Semua Tingkat</button>
+        <button class="btn btn-secondary me-2" onclick="filterByTingkat(10)">Tingkat 10</button>
+        <button class="btn btn-secondary me-2" onclick="filterByTingkat(11)">Tingkat 11</button>
+        <button class="btn btn-secondary" onclick="filterByTingkat(12)">Tingkat 12</button>
+      </div>
 
       <div id="jadwalList" class="row g-2">
         @forelse($jadwals as $className => $classJadwals)
@@ -70,11 +70,11 @@
               </table>
             </div>
             <div class="card-footer">
-              <a href="{{ route('jadwal.edit', $jadwal->id) }}" class="btn btn-primary btn-sm">Edit</a>
-              <form action="{{ route('jadwal.hapus', $jadwal->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Are you sure you want to delete this item?');">
-                  @csrf
-                  @method('DELETE')
-                  <button type="submit" class="btn btn-danger btn-sm">Hapus</button>
+              <!-- Menggunakan kelas ID dari jadwal pertama dalam collection -->
+              <form action="{{ route('jadwal.hapus', ['id' => $classJadwals->first()->kelas_id]) }}" method="POST" class="d-inline" onsubmit="return confirm('Apakah Anda yakin ingin menghapus semua jadwal untuk kelas ini?');">
+                @csrf
+                @method('DELETE')
+                <button type="submit" class="btn btn-danger btn-sm">Hapus Semua Jadwal</button>
               </form>
             </div>
           </div>
