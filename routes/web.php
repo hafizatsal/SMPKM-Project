@@ -30,6 +30,8 @@ Route::post('/jadwal/simpan', [JadwalController::class, 'simpanJadwal'])->name('
 Route::get('jadwal/edit/{id}', [JadwalController::class, 'edit'])->name('jadwal.edit');
 Route::put('/jadwal/update/{id}', [JadwalController::class, 'updateJadwal'])->name('jadwal.update');
 Route::delete('/jadwal/hapus/{id}', [JadwalController::class, 'hapusJadwal'])->name('jadwal.hapus');
+Route::get('/api/kelas/{tahunAjaranId}/{tingkat}', [KelasController::class, 'getKelasByTingkat']);
+
 
 // Kelas
 Route::get('/kelas/daftar', [KelasController::class, 'daftarKelas'])->name('kelas.daftar');

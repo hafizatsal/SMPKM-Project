@@ -32,4 +32,9 @@ class KelasTersedia extends Model
     {
         return $this->belongsTo(Ruangan::class, 'ruangan_id');
     }
+
+    public function getTingkatAttribute()
+    {
+        return $this->kelas ? $this->kelas->tingkat : null;
+    }
 }

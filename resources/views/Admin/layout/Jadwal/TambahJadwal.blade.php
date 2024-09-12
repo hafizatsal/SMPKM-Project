@@ -1,6 +1,9 @@
 @extends('Admin.layout.app')
 @section('title', 'Tambah Jadwal')
 @section('content')
+<!DOCTYPE html>
+<html lang="en">
+
 <main id="main" class="main">
   <div class="pagetitle">
     <h1>Tambah Jadwal</h1>
@@ -21,50 +24,46 @@
         <form action="{{ route('jadwal.simpan') }}" method="POST">
     @csrf
 
-          <!-- Tahun Ajaran -->
-    <div class="row mb-3">
-        <label for="tahun_ajaran_id" class="col-sm-2 col-form-label">Tahun Ajaran</label>
-        <div class="col-sm-10">
-            <select id="tahun_ajaran_id" name="tahun_ajaran_id" class="form-select" required>
-                <option value="">Pilih Tahun Ajaran</option>
-                @foreach ($tahunAjarans as $tahunAjaran)
-                    <option value="{{ $tahunAjaran->id }}">{{ $tahunAjaran->tahun }}</option>
-                @endforeach
-            </select>
-        </div>
+ <!-- Tahun Ajaran -->
+<div class="row mb-3">
+    <label for="tahun_ajaran_id" class="col-sm-2 col-form-label">Tahun Ajaran</label>
+    <div class="col-sm-10">
+        <select id="tahun_ajaran_id" name="tahun_ajaran_id" class="form-select" required>
+            <option value="">Pilih Tahun Ajaran</option>
+            @foreach ($tahunAjarans as $tahunAjaran)
+                <option value="{{ $tahunAjaran->id }}">{{ $tahunAjaran->tahun }}</option>
+            @endforeach
+        </select>
     </div>
+</div>
 
-          <!-- Tingkatan Kelas -->
-    <div class="row mb-3">
-        <label for="tingkatan" class="col-sm-2 col-form-label">Tingkatan Kelas</label>
-        <div class="col-sm-10">
-            <select id="tingkatan" name="tingkatan" class="form-select" required>
-                <option value="">Pilih Tingkatan</option>
-                @foreach ($tingkatanKelas as $tingkat)
-                    <option value="{{ $tingkat }}">{{ $tingkat }}</option>
-                @endforeach
-                <option value="semua">Semua Tingkat</option>
-            </select>
-        </div>
+<!-- Tingkatan Kelas -->
+<div class="row mb-3">
+    <label for="tingkatan" class="col-sm-2 col-form-label">Tingkatan Kelas</label>
+    <div class="col-sm-10">
+        <select id="tingkatan" name="tingkatan" class="form-select" required>
+            <option value="">Pilih Tingkatan</option>
+        </select>
     </div>
+</div>
 
           <!-- Guru -->
           <div class="row mb-3">
             <label class="col-sm-2 col-form-label">Guru</label>
             <div class="col-sm-10">
               <div class="row">
-                @foreach ($gurus as $index => $guru)
-                  <div class="col-md-2 col-sm-4 col-6">
-                    <div class="card guru-card-custom" data-id="{{ $guru->nip }}">
-                      <div class="card-body text-center">
-                        <p>{{ $guru->nama }}</p>
-                      </div>
-                    </div>
-                  </div>
-                  @if (($index + 1) % 5 == 0)
-                    <div class="w-100"></div> <!-- Clear row every 5 cards -->
-                  @endif
-                @endforeach
+              @foreach ($gurus as $index => $guru)
+    <div class="col-md-2 col-sm-4 col-6">
+        <div class="card guru-card-custom" data-id="{{ $guru->nip }}">
+            <div class="card-body text-center">
+                <p>{{ $guru->nama }}</p>
+            </div>
+        </div>
+    </div>
+    @if (($index + 1) % 5 == 0)
+        <div class="w-100"></div> <!-- Clear row every 5 cards -->
+    @endif
+@endforeach
               </div>
               <input type="hidden" id="guru_ids" name="guru_ids">
             </div>
@@ -146,87 +145,120 @@
 @section('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', function () {
-  let selectedGuruIds = [];
-  let selectedMapelIds = [];
+    let selectedGuruIds = [];
+    let selectedMapelIds = [];
 
-  // Tambah sesi Senin-Kamis
-  document.querySelector('.add-sesi-senin-kamis').addEventListener('click', function () {
-    const sesiTemplate = `
-      <div class="row mb-2">
-        <div class="col-md-5">
-          <input type="time" name="senin_kamis_mulai[]" class="form-control" placeholder="Mulai" required>
-        </div>
-        <div class="col-md-5">
-          <input type="time" name="senin_kamis_selesai[]" class="form-control" placeholder="Selesai" required>
-        </div>
-        <div class="col-md-2">
-          <button type="button" class="btn btn-danger remove-sesi">Hapus</button>
-        </div>
-      </div>`;
-    document.getElementById('sesi-senin-kamis').insertAdjacentHTML('beforeend', sesiTemplate);
-  });
+     // Format data ke JSON dan pastikan tidak ada nilai null
+     const tingkatanKelasData = @json($tingkatanKelasData);
 
-  // Tambah sesi Jumat
-  document.querySelector('.add-sesi-jumat').addEventListener('click', function () {
-    const sesiTemplate = `
-      <div class="row mb-2">
-        <div class="col-md-5">
-          <input type="time" name="jumat_mulai[]" class="form-control" placeholder="Mulai" required>
-        </div>
-        <div class="col-md-5">
-          <input type="time" name="jumat_selesai[]" class="form-control" placeholder="Selesai" required>
-        </div>
-        <div class="col-md-2">
-          <button type="button" class="btn btn-danger remove-sesi">Hapus</button>
-        </div>
-      </div>`;
-    document.getElementById('sesi-jumat').insertAdjacentHTML('beforeend', sesiTemplate);
-  });
+console.log('Data Tingkatan Kelas:', tingkatanKelasData);
 
-  // Remove sesi
-  document.addEventListener('click', function (e) {
-    if (e.target.classList.contains('remove-sesi')) {
-      e.target.closest('.row').remove();
+const tahunAjaranSelect = document.getElementById('tahun_ajaran_id');
+const tingkatanSelect = document.getElementById('tingkatan');
+
+function updateTingkatanKelas(tahunAjaranId) {
+    tingkatanSelect.innerHTML = '<option value="">Pilih Tingkatan</option>';
+
+    const tingkatanList = tingkatanKelasData[tahunAjaranId] || [];
+
+    tingkatanList.forEach(tingkatan => {
+        const option = document.createElement('option');
+        option.value = tingkatan;
+        option.textContent = tingkatan;
+        tingkatanSelect.appendChild(option);
+    });
+}
+
+tahunAjaranSelect.addEventListener('change', function() {
+    const tahunAjaranId = this.value;
+    if (tahunAjaranId) {
+        updateTingkatanKelas(tahunAjaranId);
+    } else {
+        tingkatanSelect.innerHTML = '<option value="">Pilih Tingkatan</option>';
     }
-  });
-
-  document.querySelectorAll('.guru-card-custom').forEach(card => {
-    card.addEventListener('click', function () {
-      const id = card.getAttribute('data-id');
-      card.classList.toggle('selected');
-
-      if (card.classList.contains('selected')) {
-        if (!selectedGuruIds.includes(id)) {
-          selectedGuruIds.push(id);
-        }
-      } else {
-        selectedGuruIds = selectedGuruIds.filter(guruId => guruId !== id);
-      }
-
-      // Update hidden input value
-      const guruIdsInput = document.getElementById('guru_ids');
-      guruIdsInput.value = selectedGuruIds.join(',');
-    });
-  });
-
-  document.querySelectorAll('.mapel-card-custom').forEach(card => {
-    card.addEventListener('click', function () {
-      const id = card.getAttribute('data-id');
-      card.classList.toggle('selected');
-
-      if (card.classList.contains('selected')) {
-        if (!selectedMapelIds.includes(id)) {
-          selectedMapelIds.push(id);
-        }
-      } else {
-        selectedMapelIds = selectedMapelIds.filter(mapelId => mapelId !== id);
-      }
-
-      // Update hidden input value
-      const mapelIdsInput = document.getElementById('mata_pelajaran_ids');
-      mapelIdsInput.value = selectedMapelIds.join(',');
-    });
-  });
 });
+});
+
+    // Tambah sesi Senin-Kamis
+    document.querySelector('.add-sesi-senin-kamis').addEventListener('click', function () {
+        const sesiTemplate = `
+          <div class="row mb-2">
+            <div class="col-md-5">
+              <input type="time" name="senin_kamis_mulai[]" class="form-control" placeholder="Mulai" required>
+            </div>
+            <div class="col-md-5">
+              <input type="time" name="senin_kamis_selesai[]" class="form-control" placeholder="Selesai" required>
+            </div>
+            <div class="col-md-2">
+              <button type="button" class="btn btn-danger remove-sesi">Hapus</button>
+            </div>
+          </div>`;
+        document.getElementById('sesi-senin-kamis').insertAdjacentHTML('beforeend', sesiTemplate);
+    });
+
+    // Tambah sesi Jumat
+    document.querySelector('.add-sesi-jumat').addEventListener('click', function () {
+        const sesiTemplate = `
+          <div class="row mb-2">
+            <div class="col-md-5">
+              <input type="time" name="jumat_mulai[]" class="form-control" placeholder="Mulai" required>
+            </div>
+            <div class="col-md-5">
+              <input type="time" name="jumat_selesai[]" class="form-control" placeholder="Selesai" required>
+            </div>
+            <div class="col-md-2">
+              <button type="button" class="btn btn-danger remove-sesi">Hapus</button>
+            </div>
+          </div>`;
+        document.getElementById('sesi-jumat').insertAdjacentHTML('beforeend', sesiTemplate);
+    });
+
+    // Remove sesi
+    document.addEventListener('click', function (e) {
+        if (e.target.classList.contains('remove-sesi')) {
+            e.target.closest('.row').remove();
+        }
+    });
+
+    // Handle guru selection
+    document.querySelectorAll('.guru-card-custom').forEach(card => {
+        card.addEventListener('click', function () {
+            const id = card.getAttribute('data-id');
+            card.classList.toggle('selected');
+
+            if (card.classList.contains('selected')) {
+                if (!selectedGuruIds.includes(id)) {
+                    selectedGuruIds.push(id);
+                }
+            } else {
+                selectedGuruIds = selectedGuruIds.filter(guruId => guruId !== id);
+            }
+
+            // Update hidden input value
+            const guruIdsInput = document.getElementById('guru_ids');
+            guruIdsInput.value = selectedGuruIds.join(',');
+        });
+    });
+
+    // Handle mata pelajaran selection
+    document.querySelectorAll('.mapel-card-custom').forEach(card => {
+        card.addEventListener('click', function () {
+            const id = card.getAttribute('data-id');
+            card.classList.toggle('selected');
+
+            if (card.classList.contains('selected')) {
+                if (!selectedMapelIds.includes(id)) {
+                    selectedMapelIds.push(id);
+                }
+            } else {
+                selectedMapelIds = selectedMapelIds.filter(mapelId => mapelId !== id);
+            }
+
+            // Update hidden input value
+            const mapelIdsInput = document.getElementById('mata_pelajaran_ids');
+            mapelIdsInput.value = selectedMapelIds.join(',');
+        });
+    });
+
 </script>
 @endsection
