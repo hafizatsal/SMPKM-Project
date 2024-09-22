@@ -1463,3 +1463,74 @@ h6 {
   visibility: hidden;
   height: 300px; /* Sesuaikan dengan tinggi minimum yang Anda butuhkan */
 }
+
+.grid-container {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr); /* Dua kolom dengan ukuran yang sama */
+  gap: 1rem; /* Jarak antar card */
+}
+
+.table-fixed {
+  table-layout: fixed;
+  width: 100%;
+}
+
+.table th, .table td {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.guru-card-custom {
+  /* Adjust the card width and height as needed */
+  width: 250px; /* You can set a specific width */
+  height: 100px; /* You can set a specific height */
+  margin-bottom: 15px; /* Adjust margin as needed */
+}
+
+.guru-card-custom .card-body {
+  /* Ensure content fits well inside the card */
+  text-align: center;
+  padding: 0px;
+}
+
+.guru-name {
+  font-size: 16px; /* Adjust font size for the name */
+  margin-bottom: 0px; /* Space below the name */
+}
+
+.mata-pelajaran {
+  font-size: 14px; /* Adjust font size for the subjects */
+  color: #6c757d; /* Optional: Change color if needed */
+  margin-bottom: 20px;
+}
+
+/* Styles for Mata Pelajaran cards */
+.mapel-card-custom {
+  margin-bottom: 20px; /* Space below each card */
+  border: 1px solid #ddd; /* Border around the card */
+  border-radius: 5px; /* Rounded corners */
+  padding: 10px; /* Padding inside the card */
+  width: 250px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* Shadow effect */
+  height: 100px; /* Fixed height for the card */
+  overflow: hidden; /* Hide overflowing content */
+}
+
+.mapel-card-body {
+  height: 100%; /* Full height of the card */
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center; /* Center-align text */
+}
+
+.mapel-name {
+  margin-bottom: 5px; /* Space between name and mata pelajaran */
+  font-size: 16px; /* Font size for the name */
+  font-weight: bold; /* Bold name */
+  line-height: 1.2; /* Line height for readability */
+  overflow: hidden; /* Hide overflowing text */
+  text-overflow: ellipsis; /* Display ellipsis for overflowing text */
+  white-space: nowrap; /* Prevent text wrapping */
+}

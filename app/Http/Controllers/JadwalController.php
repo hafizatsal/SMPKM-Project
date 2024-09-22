@@ -17,51 +17,35 @@ class JadwalController extends Controller
 {
     public function daftarJadwal(Request $request)
     {
+        $tahunAjaranId = $request->input('tahun_ajaran', 1);
+
+        $kelasTersedia = KelasTersedia::where('tahun_ajaran_id', $tahunAjaranId)->pluck('kelas_id');
+
+        \Log::info('Kelas Tersedia untuk tahun ajaran ID ' . $tahunAjaranId . ':', $kelasTersedia->toArray());
+
+        $jadwals = Jadwal::with(['kelas', 'ruangan', 'mataPelajaran', 'guru'])
+            ->whereIn('kelas_id', $kelasTersedia)
+            ->where('tahun_ajaran_id', $tahunAjaranId)
+            ->get();
+
+        \Log::info('Jadwals untuk tahun ajaran ID ' . $tahunAjaranId . ':', $jadwals->toArray());
+
+        $jadwalsGrouped = $jadwals->groupBy('kelas.nama_kelas');
+
         $tahunAjarans = TahunAjaran::all();
-        $query = Jadwal::with(['kelas', 'tahunAjaran', 'ruangan', 'mataPelajaran', 'guru']);
 
-        // Ambil data tahun ajaran dan tingkatan kelas dari tabel kelas_tersedia
-        $kelasTersediaQuery = KelasTersedia::query();
-        if ($request->filled('tahun_ajaran')) {
-            $kelasTersediaQuery->where('tahun_ajaran_id', $request->input('tahun_ajaran'));
-        }
-        if ($request->filled('tingkat')) {
-            $kelasTersediaQuery->where('tingkat', $request->input('tingkat'));
-        }
-        $kelasTersedia = $kelasTersediaQuery->get();
-
-        if ($kelasTersedia->isNotEmpty()) {
-            $tahunAjaranIds = $kelasTersedia->pluck('tahun_ajaran_id')->unique();
-            $tingkatanKelas = $kelasTersedia->pluck('tingkat')->unique();
-            
-            $query->whereIn('tahun_ajaran_id', $tahunAjaranIds);
-            $query->whereHas('kelas', function($q) use ($tingkatanKelas) {
-                $q->whereIn('tingkat', $tingkatanKelas);
-            });
-        }
-
-        // Debugging
-        Log::info('Query untuk daftar jadwal:', ['sql' => $query->toSql(), 'bindings' => $query->getBindings()]);
-        $jadwals = $query->get()->groupBy('kelas.nama_kelas');
-        // Debugging
-        Log::info('Jadwal yang ditemukan:', $jadwals->toArray());
-        return view('Admin.layout.Jadwal.DaftarJadwal', compact('jadwals', 'tahunAjarans'));
+        return view('Admin.layout.Jadwal.DaftarJadwal', compact('jadwalsGrouped', 'tahunAjarans', 'tahunAjaranId'));
     }
 
     public function tambahJadwal()
     {
-        $tahunAjarans = TahunAjaran::all();
         $gurus = Guru::all();
         $mataPelajarans = MataPelajaran::all();
         
-        // Mengambil data tingkat dari tabel kelas_tersedia
-        $tingkatanKelas = KelasTersedia::distinct()->pluck('tingkat');
-        
-        // Mengambil data tahun ajaran dari tabel kelas_tersedia
+        $tingkatanKelas = KelasTersedia::distinct()->pluck('tingkat')->sort();
         $tahunAjaransTersedia = KelasTersedia::distinct()->pluck('tahun_ajaran_id');
         $tahunAjarans = TahunAjaran::whereIn('id', $tahunAjaransTersedia)->get();
         
-        // Debugging
         Log::info('Data yang diambil untuk form tambah jadwal:', [
             'tahunAjarans' => $tahunAjarans->toArray(),
             'gurus' => $gurus->toArray(),
@@ -88,8 +72,9 @@ class JadwalController extends Controller
             'jumat_selesai' => 'required|array',
             'jumat_selesai.*' => 'required|date_format:H:i|after:jumat_mulai.*',
         ]);
-    
-        // Ambil waktu sesi dari input
+
+        Log::info('Data yang diterima untuk menyimpan jadwal:', $validatedData);
+        
         $seninKamisMulai = $request->input('senin_kamis_mulai');
         $seninKamisSelesai = $request->input('senin_kamis_selesai');
         $jumatMulai = $request->input('jumat_mulai');
@@ -114,31 +99,68 @@ class JadwalController extends Controller
 
     public function editJadwal($id)
     {
-        $jadwal = Jadwal::findOrFail($id);
-        return view('Admin.layout.Jadwal.EditJadwal', compact('jadwal'));
+        $jadwal = Jadwal::with(['kelas', 'ruangan', 'mataPelajaran', 'guru'])->findOrFail($id);
+        $ruangans = Ruangan::all();
+        $mataPelajarans = MataPelajaran::all();
+        
+        // Load all gurus with mata pelajaran relations
+        $gurus = Guru::with('mataPelajarans')->get();
+    
+        return view('Admin.layout.Jadwal.EditJadwal', compact('jadwal', 'ruangans', 'mataPelajarans', 'gurus'));
     }
 
-    public function updateJadwal(Request $request, $id)
-    {
-        $request->validate([
-            'kelas_id' => 'required|integer',
-            'guru_id' => 'required|integer',
-            'mata_pelajaran_id' => 'required|integer',
-            'hari' => 'required|string|max:10',
-            'jam_mulai' => 'required|date_format:H:i',
-            'jam_selesai' => 'required|date_format:H:i',
-        ]);
-        $jadwal = Jadwal::findOrFail($id);
-        $jadwal->update($request->all());
-        return redirect()->route('jadwal.daftar')->with('success', 'Jadwal berhasil diperbarui.');
-    }
+
+public function editByClass($kelas_id)
+{
+    // Fetch schedules for the given class
+    $classJadwals = Jadwal::where('kelas_id', $kelas_id)->get();
+    $ruangans = Ruangan::all();
+    $mataPelajarans = MataPelajaran::all();
+    $gurus = Guru::all();
+
+    return view('Admin.layout.Jadwal.EditJadwal', [
+        'classJadwals' => $classJadwals,
+        'ruangans' => $ruangans,
+        'mataPelajarans' => $mataPelajarans,
+        'gurus' => $gurus,
+        'kelas_id' => $kelas_id
+    ]);
+}
+
+
+public function updateJadwal(Request $request, $id)
+{
+    // Validate request
+    $request->validate([
+        'jam_mulai' => 'required|date_format:H:i',
+        'jam_selesai' => 'required|date_format:H:i',
+        'hari' => 'required|string',
+        'ruangan_id' => 'required|exists:ruangans,id',
+        'mata_pelajaran_id' => 'required|exists:mata_pelajarans,id',
+        'guru_id' => 'required|exists:gurus,id',
+    ]);
+
+    // Fetch the schedule entry
+    $jadwal = Jadwal::findOrFail($id);
+
+    // Update the schedule with new values
+    $jadwal->jam_mulai = $request->input('jam_mulai');
+    $jadwal->jam_selesai = $request->input('jam_selesai');
+    $jadwal->hari = $request->input('hari');
+    $jadwal->ruangan_id = $request->input('ruangan_id');
+    $jadwal->mata_pelajaran_id = $request->input('mata_pelajaran_id');
+    $jadwal->guru_id = $request->input('guru_id');
+    $jadwal->save();
+
+    // Redirect with success message
+    return redirect()->route('jadwal.index')->with('success', 'Jadwal updated successfully!');
+}
 
     public function hapusJadwal($id)
     {
         Log::info('Menghapus semua jadwal untuk kelas dengan ID:', ['kelas_id' => $id]);
     
         try {
-            // Temukan semua jadwal yang terkait dengan kelas tertentu
             Jadwal::where('kelas_id', $id)->delete();
     
             Log::info('Semua jadwal untuk kelas berhasil dihapus:', ['kelas_id' => $id]);
@@ -150,93 +172,85 @@ class JadwalController extends Controller
     }
 
     private function penjadwalanOtomatis($tahunAjaranId, $guruIds, $mataPelajaranIds, $tingkatan, $seninKamisMulai, $seninKamisSelesai, $jumatMulai, $jumatSelesai)
-{
-    Log::info('Mulai proses penjadwalan otomatis', [
-        'tahun_ajaran_id' => $tahunAjaranId,
-        'guru_ids' => $guruIds,
-        'mata_pelajaran_ids' => $mataPelajaranIds,
-        'tingkatan' => $tingkatan,
-        'senin_kamis_mulai' => $seninKamisMulai,
-        'senin_kamis_selesai' => $seninKamisSelesai,
-        'jumat_mulai' => $jumatMulai,
-        'jumat_selesai' => $jumatSelesai,
-    ]);
+    {
+        Log::info('Mulai proses penjadwalan otomatis', [
+            'tahun_ajaran_id' => $tahunAjaranId,
+            'guru_ids' => $guruIds,
+            'mata_pelajaran_ids' => $mataPelajaranIds,
+            'tingkatan' => $tingkatan,
+            'senin_kamis_mulai' => $seninKamisMulai,
+            'senin_kamis_selesai' => $seninKamisSelesai,
+            'jumat_mulai' => $jumatMulai,
+            'jumat_selesai' => $jumatSelesai,
+        ]);
 
-    // Ambil data kelas tersedia berdasarkan tahun ajaran dan tingkat
-    $kelasTersedia = KelasTersedia::where('tahun_ajaran_id', $tahunAjaranId)
-                                  ->where('tingkat', $tingkatan)
-                                  ->get();
+        $kelasTersedia = KelasTersedia::where('tahun_ajaran_id', $tahunAjaranId)
+                                      ->where('tingkat', $tingkatan)
+                                      ->get();
 
-    Log::info('Kelas Tersedia untuk tahun ajaran ID ' . $tahunAjaranId . ' dan tingkat ' . $tingkatan, $kelasTersedia->toArray());
+        Log::info('Kelas Tersedia untuk tahun ajaran ID ' . $tahunAjaranId . ' dan tingkat ' . $tingkatan, $kelasTersedia->toArray());
 
-    if ($kelasTersedia->isEmpty()) {
-        Log::error('Tidak ada kelas tersedia untuk tahun ajaran ID ' . $tahunAjaranId . ' dan tingkat ' . $tingkatan);
-        return; // Jika tidak ada kelas tersedia, tidak melakukan penjadwalan
-    }
+        if ($kelasTersedia->isEmpty()) {
+            Log::error('Tidak ada kelas tersedia untuk tahun ajaran ID ' . $tahunAjaranId . ' dan tingkat ' . $tingkatan);
+            return;
+        }
 
-    // Daftar hari yang akan diproses
-    $hariList = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat'];
-    $mataPelajaranGuru = [];
-    $guruJam = array_fill_keys($guruIds, 0);
+        $hariList = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat'];
+        $mataPelajaranGuru = [];
+        $guruJam = array_fill_keys($guruIds, 0);
+        $mataPelajaranJam = count($hariList) * count($seninKamisMulai) * count($kelasTersedia);
+        $bagiBebanJamGuru = $mataPelajaranJam / count($guruIds);
 
-    // Hitung jumlah sesi mata pelajaran
-    $mataPelajaranJam = count($hariList) * count($seninKamisMulai) * count($kelasTersedia);
-    $bagiBebanJamGuru = $mataPelajaranJam / count($guruIds);
+        foreach ($kelasTersedia as $kelasTersediaItem) {
+            $kelas = $kelasTersediaItem->kelas;
+            $ruangan = $kelasTersediaItem->ruangan;
 
-    foreach ($kelasTersedia as $kelasTersediaItem) {
-        $kelas = $kelasTersediaItem->kelas;
-        $ruangan = $kelasTersediaItem->ruangan; // Mengambil ruangan yang sesuai dengan kelas
+            Log::info('Memproses kelas:', ['kelas_id' => $kelas->id, 'kelas_nama' => $kelas->nama_kelas]);
 
-        Log::info('Memproses kelas:', ['kelas_id' => $kelas->id]);
+            foreach ($hariList as $hari) {
+                $sesiWaktuMulai = ($hari === 'Jumat') ? $jumatMulai : $seninKamisMulai;
+                $sesiWaktuSelesai = ($hari === 'Jumat') ? $jumatSelesai : $seninKamisSelesai;
 
-        foreach ($hariList as $hari) {
-            $sesiWaktuMulai = ($hari === 'Jumat') ? $jumatMulai : $seninKamisMulai;
-            $sesiWaktuSelesai = ($hari === 'Jumat') ? $jumatSelesai : $seninKamisSelesai;
+                foreach ($sesiWaktuMulai as $index => $jamMulai) {
+                    $jamSelesai = $sesiWaktuSelesai[$index];
+                    $mataPelajaranId = $mataPelajaranIds[array_rand($mataPelajaranIds)];
 
-            foreach ($sesiWaktuMulai as $index => $jamMulai) {
-                $jamSelesai = $sesiWaktuSelesai[$index];
-                $mataPelajaranId = $mataPelajaranIds[array_rand($mataPelajaranIds)];
+                    if (!isset($mataPelajaranGuru[$kelas->id][$mataPelajaranId])) {
+                        $validGuruIds = GuruMataPelajaran::where('mata_pelajaran_id', $mataPelajaranId)
+                                                        ->pluck('guru_id')
+                                                        ->intersect($guruIds)
+                                                        ->toArray();
+                        if (empty($validGuruIds)) {
+                            Log::error('Tidak ada guru yang valid untuk mata pelajaran ID ' . $mataPelajaranId);
+                            continue;
+                        }
 
-                // Pilih guru yang tepat untuk mata pelajaran
-                if (!isset($mataPelajaranGuru[$kelas->id][$mataPelajaranId])) {
-                    $validGuruIds = GuruMataPelajaran::where('mata_pelajaran_id', $mataPelajaranId)
-                                                    ->pluck('guru_id')
-                                                    ->intersect($guruIds)
-                                                    ->toArray();
-                    if (empty($validGuruIds)) {
-                        Log::error('Tidak ada guru yang valid untuk mata pelajaran ID ' . $mataPelajaranId);
-                        continue;
+                        $guruId = $this->pilihGuruDenganBebanJamTerdekat($validGuruIds, $guruJam, $bagiBebanJamGuru);
+                        $mataPelajaranGuru[$kelas->id][$mataPelajaranId] = $guruId;
+                    } else {
+                        $guruId = $mataPelajaranGuru[$kelas->id][$mataPelajaranId];
                     }
 
-                    $guruId = $this->pilihGuruDenganBebanJamTerdekat($validGuruIds, $guruJam, $bagiBebanJamGuru);
-                    $mataPelajaranGuru[$kelas->id][$mataPelajaranId] = $guruId;
-                } else {
-                    $guruId = $mataPelajaranGuru[$kelas->id][$mataPelajaranId];
+                    $jadwal = Jadwal::create([
+                        'tahun_ajaran_id' => $tahunAjaranId,
+                        'kelas_id' => $kelas->id,
+                        'ruangan_id' => $ruangan->id,
+                        'mapel_id' => $mataPelajaranId,
+                        'guru_id' => $guruId,
+                        'hari' => $hari,
+                        'jam_mulai' => $jamMulai,
+                        'jam_selesai' => $jamSelesai,
+                        'urutan' => $hari . ' ' . ($index + 1)
+                    ]);
+
+                    $guruJam[$guruId] += $this->hitungDurasiJam($jamMulai, $jamSelesai);
+
+                    Log::info('Jadwal disimpan:', $jadwal->toArray());
                 }
-
-                // Simpan jadwal
-                $jadwal = Jadwal::create([
-                    'tahun_ajaran_id' => $tahunAjaranId,
-                    'kelas_id' => $kelas->id,
-                    'ruangan_id' => $ruangan->id, // Menggunakan ruangan yang sesuai dengan kelas
-                    'mapel_id' => $mataPelajaranId,
-                    'guru_id' => $guruId,
-                    'hari' => $hari,
-                    'jam_mulai' => $jamMulai,
-                    'jam_selesai' => $jamSelesai,
-                    'urutan' => $hari . ' ' . ($index + 1)
-                ]);
-
-                // Update beban jam guru
-                $guruJam[$guruId] += $this->hitungDurasiJam($jamMulai, $jamSelesai);
-
-                Log::info('Jadwal disimpan:', $jadwal->toArray());
             }
         }
     }
-}
 
-    // Fungsi untuk memilih guru dengan beban jam terdekat
     private function pilihGuruDenganBebanJamTerdekat($guruIds, $guruJam, $bagiBebanJamGuru)
     {
         $guruDenganBebanTerdekat = array_reduce($guruIds, function ($carry, $guruId) use ($guruJam, $bagiBebanJamGuru) {
@@ -248,7 +262,6 @@ class JadwalController extends Controller
         return $guruDenganBebanTerdekat;
     }
 
-    // Fungsi untuk menghitung durasi jam
     private function hitungDurasiJam($jamMulai, $jamSelesai)
     {
         $start = \Carbon\Carbon::createFromFormat('H:i', $jamMulai);

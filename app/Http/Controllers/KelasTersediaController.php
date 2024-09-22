@@ -11,33 +11,29 @@ use Illuminate\Http\Request;
 class KelasTersediaController extends Controller
 {
     public function daftarKelasTersedia(Request $request)
-    {
-        // Dapatkan tahun ajaran terbaru
-        $tahunAjaranTerbaru = TahunAjaran::orderBy('tahun', 'desc')->first();
+{
+    $tahunAjaranTerbaru = TahunAjaran::orderBy('tahun', 'desc')->first();
+    $tahunAjaranId = $request->query('tahun_ajaran_id', $tahunAjaranTerbaru ? $tahunAjaranTerbaru->id : null);
 
-        // Ambil tahun ajaran ID dari request atau gunakan tahun ajaran terbaru jika tidak ada di request
-        $tahunAjaranId = $request->query('tahun_ajaran_id', $tahunAjaranTerbaru ? $tahunAjaranTerbaru->id : null);
+    $kelasTersedia = KelasTersedia::where('tahun_ajaran_id', $tahunAjaranId)
+        ->with(['tahunAjaran', 'ruangan', 'kelas'])
+        ->get(); // Data ini adalah koleksi Eloquent
 
-        // Ambil data kelas tersedia berdasarkan tahun ajaran yang dipilih
-        $kelasTersedia = KelasTersedia::where('tahun_ajaran_id', $tahunAjaranId)
-            ->with(['tahunAjaran', 'ruangan', 'kelas'])
-            ->get();
+    $tahunAjaran = TahunAjaran::all(); // Koleksi Eloquent
 
-        // Ambil semua data tahun ajaran untuk dropdown
-        $tahunAjaran = TahunAjaran::all();
+    return view('Admin.layout.KelasTersedia.DaftarKelasTersedia', compact('kelasTersedia', 'tahunAjaran', 'tahunAjaranId'));
+}
 
-        return view('Admin.layout.KelasTersedia.DaftarKelasTersedia', compact('kelasTersedia', 'tahunAjaran', 'tahunAjaranId'));
-    }
+public function tambahKelasTersedia()
+{
+    $tahunAjaran = TahunAjaran::all(); // Koleksi Eloquent
+    $ruangan = Ruangan::orderBy('nama_ruangan')->get(); // Koleksi Eloquent
+    $kelas = Kelas::orderBy('nama_kelas')->get(); // Koleksi Eloquent
 
-    public function tambahKelasTersedia()
-    {
-        $tahunAjaran = TahunAjaran::all();
-        $ruangan = Ruangan::orderBy('nama_ruangan')->get();
-        $kelas = Kelas::orderBy('nama_kelas')->get();
-        return view('Admin.layout.KelasTersedia.TambahKelasTersedia', compact('tahunAjaran', 'ruangan', 'kelas'));
-    }
+    return view('Admin.layout.KelasTersedia.TambahKelasTersedia', compact('tahunAjaran', 'ruangan', 'kelas'));
+}
 
-    public function simpanKelasTersedia(Request $request)
+public function simpanKelasTersedia(Request $request)
 {
     $validatedData = $request->validate([
         'tahun_ajaran_id' => 'required|exists:tahun_ajaran,id',
@@ -51,7 +47,6 @@ class KelasTersediaController extends Controller
     $kelasIds = $validatedData['kelas_ids'];
     $ruanganIds = $validatedData['ruangan_ids'];
 
-    // Menghitung jumlah entri yang akan diproses
     $jumlahEntries = min(count($kelasIds), count($ruanganIds));
 
     for ($i = 0; $i < $jumlahEntries; $i++) {
@@ -65,7 +60,6 @@ class KelasTersediaController extends Controller
             return redirect()->back()->with('error', 'Tingkat tidak valid.');
         }
 
-        // Simpan atau perbarui entri
         KelasTersedia::updateOrCreate([
             'tahun_ajaran_id' => $tahunAjaranId,
             'ruangan_id' => $ruanganId,
@@ -99,7 +93,6 @@ class KelasTersediaController extends Controller
     $kelas = Kelas::findOrFail($validatedData['kelas_id']);
     $tingkat = substr($kelas->nama_kelas, 0, 2);
 
-    // Validasi tingkat untuk memastikan hanya nilai 10, 11, atau 12 yang diterima
     if (!in_array($tingkat, ['10', '11', '12'])) {
         return redirect()->back()->with('error', 'Tingkat tidak valid.');
     }

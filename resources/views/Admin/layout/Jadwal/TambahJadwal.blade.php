@@ -19,75 +19,80 @@
 
         <!-- Form tambah jadwal -->
         <form action="{{ route('jadwal.simpan') }}" method="POST">
-    @csrf
+          @csrf
 
           <!-- Tahun Ajaran -->
-    <div class="row mb-3">
-        <label for="tahun_ajaran_id" class="col-sm-2 col-form-label">Tahun Ajaran</label>
-        <div class="col-sm-10">
-            <select id="tahun_ajaran_id" name="tahun_ajaran_id" class="form-select" required>
+          <div class="row mb-3">
+            <label for="tahun_ajaran_id" class="col-sm-2 col-form-label">Tahun Ajaran</label>
+            <div class="col-sm-10">
+              <select id="tahun_ajaran_id" name="tahun_ajaran_id" class="form-select" required>
                 <option value="">Pilih Tahun Ajaran</option>
                 @foreach ($tahunAjarans as $tahunAjaran)
-                    <option value="{{ $tahunAjaran->id }}">{{ $tahunAjaran->tahun }}</option>
+                  <option value="{{ $tahunAjaran->id }}">{{ $tahunAjaran->tahun }}</option>
                 @endforeach
-            </select>
-        </div>
-    </div>
+              </select>
+            </div>
+          </div>
 
           <!-- Tingkatan Kelas -->
-    <div class="row mb-3">
-        <label for="tingkatan" class="col-sm-2 col-form-label">Tingkatan Kelas</label>
-        <div class="col-sm-10">
-            <select id="tingkatan" name="tingkatan" class="form-select" required>
+          <div class="row mb-3">
+            <label for="tingkatan" class="col-sm-2 col-form-label">Tingkatan Kelas</label>
+            <div class="col-sm-10">
+              <select id="tingkatan" name="tingkatan" class="form-select" required>
                 <option value="">Pilih Tingkatan</option>
                 @foreach ($tingkatanKelas as $tingkat)
-                    <option value="{{ $tingkat }}">{{ $tingkat }}</option>
+                  <option value="{{ $tingkat }}">{{ $tingkat }}</option>
                 @endforeach
                 <option value="semua">Semua Tingkat</option>
-            </select>
-        </div>
-    </div>
-
-          <!-- Guru -->
-          <div class="row mb-3">
-            <label class="col-sm-2 col-form-label">Guru</label>
-            <div class="col-sm-10">
-              <div class="row">
-                @foreach ($gurus as $index => $guru)
-                  <div class="col-md-2 col-sm-4 col-6">
-                    <div class="card guru-card-custom" data-id="{{ $guru->nip }}">
-                      <div class="card-body text-center">
-                        <p>{{ $guru->nama }}</p>
-                      </div>
-                    </div>
-                  </div>
-                  @if (($index + 1) % 5 == 0)
-                    <div class="w-100"></div> <!-- Clear row every 5 cards -->
-                  @endif
-                @endforeach
-              </div>
-              <input type="hidden" id="guru_ids" name="guru_ids">
+              </select>
             </div>
           </div>
+
+         <!-- Guru -->
+<div class="row mb-3">
+  <label class="col-sm-2 col-form-label">Guru</label>
+  <div class="col-sm-10">
+    <div class="row">
+      @foreach ($gurus as $index => $guru)
+        <div class="col-md-2 col-sm-4 col-6">
+          <div class="card guru-card-custom guru-card-details" data-id="{{ $guru->nip }}">
+            <div class="card-body d-flex flex-column align-items-center">
+              <p class="guru-name">{{ $guru->nama }}</p>
+              <small class="mata-pelajaran">{{ $guru->mataPelajarans->pluck('nama_mapel')->join(', ') }}</small>
+            </div>
+          </div>
+        </div>
+        @if (($index + 1) % 5 == 0)
+          <div class="w-100"></div> <!-- Clear row every 5 cards -->
+        @endif
+      @endforeach
+    </div>
+    <input type="hidden" id="guru_ids" name="guru_ids">
+  </div>
+</div>
 
           <!-- Mata Pelajaran -->
-          <div class="row mb-3">
-            <label class="col-sm-2 col-form-label">Mata Pelajaran</label>
-            <div class="col-sm-10">
-              <div class="row">
-                @foreach ($mataPelajarans as $mataPelajaran)
-                  <div class="col-md-3 col-sm-6">
-                    <div class="card mapel-card-custom" data-id="{{ $mataPelajaran->id }}">
-                      <div class="card-body text-center">
-                        <p>{{ $mataPelajaran->nama_mapel }}</p>
-                      </div>
-                    </div>
-                  </div>
-                @endforeach
-              </div>
-              <input type="hidden" id="mata_pelajaran_ids" name="mata_pelajaran_ids">
+<div class="row mb-3">
+  <label class="col-sm-2 col-form-label">Mata Pelajaran</label>
+  <div class="col-sm-10">
+    <div class="row">
+      @foreach ($mataPelajarans as $mataPelajaran)
+        <div class="col-md-2 col-sm-4 col-6">
+          <div class="card mapel-card-custom" data-id="{{ $mataPelajaran->id }}">
+            <div class="card-body text-center mapel-card-body">
+              <p class="mapel-name">{{ $mataPelajaran->nama_mapel }}</p>
             </div>
           </div>
+        </div>
+        @if (($index + 1) % 5 == 0)
+          <div class="w-100"></div> <!-- Clear row every 5 cards -->
+        @endif
+      @endforeach
+    </div>
+    <input type="hidden" id="mata_pelajaran_ids" name="mata_pelajaran_ids">
+  </div>
+</div>
+
 
           <!-- Sesi Waktu Senin-Kamis -->
           <div class="row mb-3">
@@ -129,12 +134,12 @@
             </div>
           </div>
 
-           <!-- Tombol Submit -->
-    <div class="row mb-3">
-        <div class="col-sm-10 offset-sm-2">
-            <button type="submit" class="btn btn-primary">Simpan</button>
-        </div>
-    </div>
+          <!-- Tombol Submit -->
+          <div class="row mb-3">
+            <div class="col-sm-10 offset-sm-2">
+              <button type="submit" class="btn btn-primary">Simpan</button>
+            </div>
+          </div>
         </form>
         <!-- End form tambah jadwal -->
       </div>
@@ -190,6 +195,7 @@ document.addEventListener('DOMContentLoaded', function () {
     }
   });
 
+  // Pilih dan update ID guru
   document.querySelectorAll('.guru-card-custom').forEach(card => {
     card.addEventListener('click', function () {
       const id = card.getAttribute('data-id');
@@ -209,6 +215,7 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   });
 
+  // Pilih dan update ID mata pelajaran
   document.querySelectorAll('.mapel-card-custom').forEach(card => {
     card.addEventListener('click', function () {
       const id = card.getAttribute('data-id');

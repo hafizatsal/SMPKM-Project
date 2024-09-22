@@ -11,11 +11,12 @@ class KelasTersedia extends Model
 
     protected $table = 'kelas_tersedia';
 
+    // Isi kolom yang dapat diisi secara massal
     protected $fillable = [
         'tahun_ajaran_id',
         'ruangan_id',
         'kelas_id',
-        'tingkat', // Tambahkan kolom tingkat di sini
+        'tingkat', // Pastikan kolom tingkat ada di sini
     ];
 
     public function tahunAjaran()

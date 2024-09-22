@@ -31,6 +31,11 @@ class Guru extends Model
         return $this->hasMany(GuruMataPelajaran::class, 'guru_id');
     }
 
+    public function mataPelajarans()
+    {
+        return $this->belongsToMany(MataPelajaran::class, 'guru_mata_pelajaran', 'guru_id', 'mata_pelajaran_id');
+    }
+
     public function jadwal()
     {
         return $this->hasMany(Jadwal::class, 'guru_id');

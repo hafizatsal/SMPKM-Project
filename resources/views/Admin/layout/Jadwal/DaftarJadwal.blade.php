@@ -20,12 +20,18 @@
       </div>
       
       <div class="col-12 mb-3">
-        <label for="tahunAjaran" class="form-label">Pilih Tahun Ajaran:</label>
-        <select id="tahunAjaran" class="form-select" onchange="filterJadwal()">
-          @foreach($tahunAjarans as $tahunAjaran)
-            <option value="{{ $tahunAjaran->id }}" {{ $loop->last ? 'selected' : '' }}>{{ $tahunAjaran->tahun }}</option>
-          @endforeach
-        </select>
+        <form method="GET" action="{{ route('jadwal.daftar') }}">
+          <div class="input-group">
+            <label for="tahunAjaran" class="form-label me-2">Pilih Tahun Ajaran:</label>
+            <select id="tahunAjaran" name="tahun_ajaran" class="form-select" onchange="this.form.submit()">
+              @foreach($tahunAjarans as $tahunAjaran)
+                <option value="{{ $tahunAjaran->id }}" {{ $tahunAjaranId == $tahunAjaran->id ? 'selected' : '' }}>
+                  {{ $tahunAjaran->tahun }}
+                </option>
+              @endforeach
+            </select>
+          </div>
+        </form>
       </div>
 
       <div class="col-12 mb-3">
@@ -35,53 +41,56 @@
         <button class="btn btn-secondary" onclick="filterByTingkat(12)">Tingkat 12</button>
       </div>
 
-      <div id="jadwalList" class="row g-2">
-        @forelse($jadwals as $className => $classJadwals)
-        <div class="col-md-6 jadwal-item" data-tahun-ajaran="{{ $classJadwals->first()->tahun_ajaran_id }}" data-tingkat="{{ $classJadwals->first()->kelas->tingkat }}">
-          <div class="card h-100">
-            <div class="card-body p-2">
-              <h5 class="card-title">{{ $className }}</h5>
-              
-              <div class="d-flex justify-content-center align-items-center mb-2 position-relative day-navigation">
-                <button class="btn btn-primary btn-sm position-absolute start-0" onclick="previousDay(this)"><<</button>
-                <span class="current-day mx-2">Senin</span>
-                <button class="btn btn-primary btn-sm position-absolute end-0" onclick="nextDay(this)">>></button>
-              </div>
+      <div id="jadwalList" class="grid-container">
+        @foreach($jadwalsGrouped as $className => $classJadwals)
+          @php
+            // Hitung jumlah jadwal untuk kelas ini
+            $jadwalCount = $classJadwals->count();
+          @endphp
 
-              <table class="table table-bordered table-fixed">
-                <thead>
-                  <tr>
-                    <th class="col-3">Jam</th>
-                    <th class="col-3">Ruangan</th>
-                    <th class="col-3">Mata Pelajaran</th>
-                    <th class="col-3">Guru</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  @foreach($classJadwals as $jadwal)
-                    <tr class="jadwal-row" data-hari="{{ $jadwal->hari }}">
-                      <td class="col-3">{{ $jadwal->jam_mulai }} - {{ $jadwal->jam_selesai }}</td>
-                      <td class="col-3">{{ $jadwal->ruangan->nama_ruangan }}</td>
-                      <td class="col-3">{{ $jadwal->mataPelajaran->nama_mapel }}</td>
-                      <td class="col-3">{{ $jadwal->guru->nama }}</td>
-                    </tr>
-                  @endforeach
-                </tbody>
-              </table>
+          {{-- Tampilkan hanya jika ada lebih dari 0 jadwal --}}
+          @if($jadwalCount > 0)
+            <div class="card h-100 mb-3">
+              <div class="card-body p-2">
+                <h5 class="card-title">{{ $className }}</h5>
+                
+                <div class="d-flex justify-content-center align-items-center mb-2 position-relative day-navigation">
+                  <button class="btn btn-primary btn-sm position-absolute start-0" onclick="previousDay(this)"><<</button>
+                  <span class="current-day mx-2">Senin</span>
+                  <button class="btn btn-primary btn-sm position-absolute end-0" onclick="nextDay(this)">>></button>
+                </div>               
+                <table class="table table-bordered table-fixed">
+    <thead>
+        <tr>
+            <th class="col-2 text-center">Jam</th>
+            <th class="col-2 text-center">Ruangan</th>
+            <th class="col-2 text-center">Mata Pelajaran</th>
+            <th class="col-2 text-center">Guru</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach($classJadwals as $jadwal)
+            <tr class="jadwal-row" data-hari="{{ $jadwal->hari }}">
+                <td class="col-2 text-center">{{ $jadwal->jam_mulai }} - {{ $jadwal->jam_selesai }}</td>
+                <td class="col-2 text-center">{{ $jadwal->ruangan->nama_ruangan }}</td>
+                <td class="col-2 text-center">{{ $jadwal->mataPelajaran->nama_mapel }}</td>
+                <td class="col-2 text-center">{{ $jadwal->guru->nama }}</td>
+                <!-- Edit button removed -->
+            </tr>
+        @endforeach
+    </tbody>
+</table>
+              </div>
+              <div class="card-footer">
+                <form action="{{ route('jadwal.hapus', ['id' => $classJadwals->first()->kelas_id]) }}" method="POST" class="d-inline" onsubmit="return confirm('Apakah Anda yakin ingin menghapus semua jadwal untuk kelas ini?');">
+                  @csrf
+                  @method('DELETE')
+                  <button type="submit" class="btn btn-danger btn-sm">Hapus Jadwal {{ $className }}</button>
+                </form>
+              </div>
             </div>
-            <div class="card-footer">
-              <!-- Menggunakan kelas ID dari jadwal pertama dalam collection -->
-              <form action="{{ route('jadwal.hapus', ['id' => $classJadwals->first()->kelas_id]) }}" method="POST" class="d-inline" onsubmit="return confirm('Apakah Anda yakin ingin menghapus semua jadwal untuk kelas ini?');">
-                @csrf
-                @method('DELETE')
-                <button type="submit" class="btn btn-danger btn-sm">Hapus Semua Jadwal</button>
-              </form>
-            </div>
-          </div>
-        </div>
-        @empty
-        <p>No schedules found.</p>
-        @endforelse
+          @endif
+        @endforeach
       </div>
     </div>
   </section>
@@ -95,15 +104,17 @@ const days = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat'];
 
 function filterJadwal() {
   const tahunAjaranId = document.getElementById('tahunAjaran').value;
+  console.log('Tahun Ajaran ID:', tahunAjaranId);
+
   const jadwalItems = document.querySelectorAll('.jadwal-item');
-  
   jadwalItems.forEach(item => {
     const itemTahunAjaran = item.getAttribute('data-tahun-ajaran');
-    const itemTingkat = item.getAttribute('data-tingkat');
+    const itemTingkat = parseInt(item.getAttribute('data-tingkat'), 10);
+    console.log('Item Tahun Ajaran:', itemTahunAjaran, 'Item Tingkat:', itemTingkat);
     
     if (
-      (!tahunAjaranId || itemTahunAjaran == tahunAjaranId) &&
-      (selectedTingkat === null || itemTingkat == selectedTingkat)
+      (!tahunAjaranId || itemTahunAjaran === tahunAjaranId) &&
+      (selectedTingkat === null || itemTingkat === selectedTingkat)
     ) {
       item.style.display = 'block';
     } else {
@@ -120,22 +131,20 @@ function filterByTingkat(tingkat) {
 }
 
 function filterByDay() {
-  const jadwalItems = document.querySelectorAll('.jadwal-item');
-  
-  jadwalItems.forEach(item => {
-    const currentDaySpan = item.querySelector('.current-day');
+  const jadwalItems = document.querySelectorAll('.jadwal-row');
+
+  jadwalItems.forEach(row => {
+    const currentDaySpan = row.closest('.card').querySelector('.current-day');
     const currentDay = currentDaySpan.textContent;
-    const jadwalRows = item.querySelectorAll('.jadwal-row');
-    
-    jadwalRows.forEach(row => {
-      if (row.getAttribute('data-hari') === currentDay) {
-        row.style.display = '';
-      } else {
-        row.style.display = 'none';
-      }
-    });
+
+    if (row.getAttribute('data-hari') === currentDay) {
+      row.style.display = ''; // Tampilkan jika hari cocok
+    } else {
+      row.style.display = 'none'; // Sembunyikan jika tidak cocok
+    }
   });
 }
+
 
 function previousDay(button) {
   const card = button.closest('.card');
@@ -155,14 +164,10 @@ function nextDay(button) {
   filterByDay();
 }
 
-// Set the newest academic year automatically
 document.addEventListener('DOMContentLoaded', function() {
   const tahunAjaranSelect = document.getElementById('tahunAjaran');
-  if (tahunAjaranSelect.options.length > 0) {
-    tahunAjaranSelect.value = tahunAjaranSelect.options[tahunAjaranSelect.options.length - 1].value;
-    filterJadwal();
-  }
-  filterByDay(); // Initial filter by day
+  tahunAjaranSelect.value = '{{ $tahunAjaranId }}';
+  filterJadwal();
 });
 </script>
 

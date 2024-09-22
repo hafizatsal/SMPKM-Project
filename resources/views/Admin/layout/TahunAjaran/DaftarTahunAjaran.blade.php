@@ -14,7 +14,8 @@
 
 <div class="container mt-5">
     <div class="row">
-        <div class="col-md-6 offset-md-3">
+        <!-- Card for Adding Academic Year -->
+        <div class="col-md-12">
             <div class="card bg-primary text-white mb-4">
                 <div class="card-header">
                     <h3>Tambah Tahun Ajaran</h3>
@@ -32,8 +33,10 @@
             </div>
         </div>
     </div>
+    
     <div class="row mt-4">
-        <div class="col-md-10 offset-md-1">
+        <!-- Card for Listing Academic Years -->
+        <div class="col-md-12">
             <div class="card">
                 <div class="card-header">
                     <h3>Daftar Tahun Ajaran</h3>
@@ -43,7 +46,7 @@
                         <thead>
                             <tr>
                                 <th>Tahun Ajaran</th>
-                                
+                                <th class="text-end">Actions</th>
                             </tr>
                         </thead>
                         <tbody>

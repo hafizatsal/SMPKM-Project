@@ -7,6 +7,7 @@ use App\Models\Guru;
 use App\Models\MataPelajaran;
 use App\Models\GuruMataPelajaran;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Auth;
 
 class GuruController extends Controller
 {
@@ -21,6 +22,12 @@ class GuruController extends Controller
         $mataPelajarans = MataPelajaran::all();
         return view('Admin.layout.Guru.TambahGuru', compact('mataPelajarans'));
     }
+
+    public function someMethod()
+{
+    $user = Auth::user();
+    return view('your.view', compact('user'));
+}
 
     public function simpanGuru(Request $request)
     {
