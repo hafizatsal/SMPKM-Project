@@ -52,18 +52,43 @@
 <div class="row mb-3">
   <label class="col-sm-2 col-form-label">Guru</label>
   <div class="col-sm-10">
-    <div class="row">
-      @foreach ($gurus as $index => $guru)
-        <div class="col-md-2 col-sm-4 col-6">
-          <div class="card guru-card-custom guru-card-details" data-id="{{ $guru->nip }}">
-            <div class="card-body d-flex flex-column align-items-center">
-              <p class="guru-name">{{ $guru->nama }}</p>
-              <small class="mata-pelajaran">{{ $guru->mataPelajarans->pluck('nama_mapel')->join(', ') }}</small>
+    <div class="row flex-wrap">
+      @php
+        $guruByMapel = [];
+        $mapelOrder = []; // Array untuk menyimpan urutan mata pelajaran
+        foreach ($gurus as $guru) {
+          foreach ($guru->mataPelajarans as $mapel) {
+            if (!isset($guruByMapel[$mapel->nama_mapel])) {
+              $guruByMapel[$mapel->nama_mapel] = [];
+              $mapelOrder[] = $mapel->nama_mapel; // Tambahkan ke urutan
+            }
+            $guruByMapel[$mapel->nama_mapel][] = $guru;
+          }
+        }
+      @endphp
+
+      @foreach ($mapelOrder as $mapel)
+        @if (isset($guruByMapel[$mapel]))
+          @php
+            $guruList = $guruByMapel[$mapel];
+            $count = count($guruList);
+          @endphp
+          @for ($i = 0; $i < $count; $i++)
+            @if ($i > 0 && $i % 5 == 0)
+              <div class="w-100"></div>
+            @endif
+            @php
+              $guru = $guruList[$i];
+            @endphp
+            <div class="col-md-2 col-sm-4 col-6">
+              <div class="card guru-card-custom guru-card-details" data-id="{{ $guru->nip }}">
+                <div class="card-body d-flex flex-column align-items-center">
+                  <p class="guru-name">{{ $guru->nama }}</p>
+                  <small class="mata-pelajaran">{{ $mapel }}</small>
+                </div>
+              </div>
             </div>
-          </div>
-        </div>
-        @if (($index + 1) % 5 == 0)
-          <div class="w-100"></div> <!-- Clear row every 5 cards -->
+          @endfor
         @endif
       @endforeach
     </div>
@@ -71,27 +96,30 @@
   </div>
 </div>
 
-          <!-- Mata Pelajaran -->
+<!-- Mata Pelajaran -->
 <div class="row mb-3">
   <label class="col-sm-2 col-form-label">Mata Pelajaran</label>
   <div class="col-sm-10">
-    <div class="row">
-      @foreach ($mataPelajarans as $mataPelajaran)
-        <div class="col-md-2 col-sm-4 col-6">
-          <div class="card mapel-card-custom" data-id="{{ $mataPelajaran->id }}">
-            <div class="card-body text-center mapel-card-body">
-              <p class="mapel-name">{{ $mataPelajaran->nama_mapel }}</p>
+    <div class="row flex-wrap">
+      @foreach ($mapelOrder as $mapel)
+        @foreach ($mataPelajarans as $mataPelajaran)
+          @if ($mataPelajaran->nama_mapel == $mapel) <!-- Cocokkan dengan urutan -->
+            <div class="col-md-2 col-sm-4 col-6">
+              <div class="card mapel-card-custom" data-id="{{ $mataPelajaran->id }}">
+                <div class="card-body text-center mapel-card-body">
+                  <p class="mapel-name">{{ $mataPelajaran->nama_mapel }}</p>
+                </div>
+              </div>
             </div>
-          </div>
-        </div>
-        @if (($index + 1) % 5 == 0)
-          <div class="w-100"></div> <!-- Clear row every 5 cards -->
-        @endif
+          @endif
+        @endforeach
       @endforeach
+      <input type="hidden" id="mata_pelajaran_ids" name="mata_pelajaran_ids">
     </div>
-    <input type="hidden" id="mata_pelajaran_ids" name="mata_pelajaran_ids">
   </div>
 </div>
+
+
 
 
           <!-- Sesi Waktu Senin-Kamis -->

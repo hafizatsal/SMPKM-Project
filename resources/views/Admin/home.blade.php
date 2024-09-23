@@ -40,85 +40,65 @@
         <div class="row mt-3">
 
             <!-- Jadwal Hari Ini Card -->
-            <div class="col-lg-6">
-                <div class="card">
+            <div class="col-lg-12 text-center">
+                <div class="card mx-auto" style="max-width: 800px;">
                     <div class="card-body">
                         <h5 class="card-title">Jadwal Hari Ini</h5>
                         <div class="mb-3">
                             <label for="tingkat" class="form-label">Pilih Tingkat:</label>
-                            <select id="tingkat" class="form-select" onchange="filterJadwal(this.value, 'A')">
+                            <select id="tingkat" class="form-select" onchange="filterJadwal(this.value)">
+                                <option value="all">Semua Tingkat</option>
                                 <option value="10">Tingkat 10</option>
                                 <option value="11">Tingkat 11</option>
                                 <option value="12">Tingkat 12</option>
                             </select>
                         </div>
                         <div class="mb-3 text-center">
-                            <button onclick="changeClass('left')" class="btn btn-secondary">←</button>
-                            <button onclick="changeClass('right')" class="btn btn-secondary">→</button>
+                            <span class="mx-3" id="current-class-name" style="cursor: pointer;">
+                                @if($jadwalsGrouped->isNotEmpty())
+                                    {{ $jadwalsGrouped->keys()->first() }} <!-- Menampilkan nama kelas pertama -->
+                                @else
+                                    Tidak ada kelas
+                                @endif
+                            </span>
                         </div>
-                        @if($jadwalHariIni->isNotEmpty())
-                            <table class="table table-bordered text-center">
-                                <thead>
-                                    <tr>
-                                        <th>Jam</th>
-                                        <th>Ruangan</th>
-                                        <th>Mata Pelajaran</th>
-                                        <th>Guru</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @foreach($jadwalHariIni as $jadwal)
+
+                        <div id="jadwal-list" class="table-responsive">
+                            @if($jadwalHariIni->isNotEmpty())
+                                <table class="table table-bordered text-center" style="table-layout: fixed; width: 100%;">
+                                    <thead>
                                         <tr>
-                                            <td>{{ $jadwal->jam_mulai }} - {{ $jadwal->jam_selesai }}</td>
-                                            <td>{{ $jadwal->ruangan->nama_ruangan }}</td>
-                                            <td>{{ $jadwal->mataPelajaran->nama_mapel }}</td>
-                                            <td>{{ $jadwal->guru->nama }}</td>
+                                            <th style="width: 25%;">Jam</th>
+                                            <th style="width: 25%;">Ruangan</th>
+                                            <th style="width: 25%;">Mata Pelajaran</th>
+                                            <th style="width: 25%;">Guru</th>
                                         </tr>
-                                    @endforeach
-                                </tbody>
-                            </table>
-                        @else
-                            <p>Tidak ada jadwal untuk hari ini.</p>
-                        @endif
+                                    </thead>
+                                    <tbody id="jadwal-body">
+                                        @foreach($jadwalHariIni as $jadwal)
+                                            <tr data-kelas="{{ $jadwal->kelas->nama_kelas }}" data-tingkat="{{ $jadwal->kelas->tingkat }}">
+                                                <td>{{ $jadwal->jam_mulai }} - {{ $jadwal->jam_selesai }}</td>
+                                                <td>{{ $jadwal->ruangan->nama_ruangan }}</td>
+                                                <td>{{ $jadwal->mataPelajaran->nama_mapel }}</td>
+                                                <td>{{ $jadwal->guru->nama }}</td>
+                                            </tr>
+                                        @endforeach
+                                    </tbody>
+                                </table>
+                            @else
+                                <p>Tidak ada jadwal untuk hari ini.</p>
+                            @endif
+                        </div>
 
                         <!-- Button Daftar Jadwal di bawah Jadwal Hari Ini -->
                         <div class="text-center mt-3">
-    <a href="{{ route('home.jadwal.daftar') }}" class="btn btn-primary">
-        Lihat Daftar Jadwal
-    </a>
-</div>
+                            <a href="{{ route('home.jadwal.daftar') }}" class="btn btn-primary">
+                                Lihat Daftar Jadwal
+                            </a>
+                        </div>
                     </div>
                 </div>
             </div><!-- End Jadwal Hari Ini Card -->
-
-            <!-- Jadwal Saat Ini Card -->
-            <div class="col-lg-6">
-                <div class="card">
-                    <div class="card-body">
-                        <h5 class="card-title">Jadwal Saat Ini</h5>
-                        <div class="mb-3">
-                            <label for="tingkat-saat-ini" class="form-label">Pilih Tingkat:</label>
-                            <select id="tingkat-saat-ini" class="form-select" onchange="filterJadwalSaatIni(this.value, 'A')">
-                                <option value="10">Tingkat 10</option>
-                                <option value="11">Tingkat 11</option>
-                                <option value="12">Tingkat 12</option>
-                            </select>
-                        </div>
-                        @if($jadwalSekarang->isNotEmpty())
-                            <ul id="jadwal-sekarang-list">
-                                @foreach($jadwalSekarang as $jadwal)
-                                    <li>
-                                        <strong>{{ $jadwal->mataPelajaran->nama_mapel }} ({{ $jadwal->jam_mulai }} - {{ $jadwal->jam_selesai }})</strong>
-                                        <br>Kelas: {{ $jadwal->kelas->nama_kelas }}
-                                    </li>
-                                @endforeach
-                            </ul>
-                        @else
-                            <p>Saat ini tidak ada jadwal yang sedang berlangsung.</p>
-                        @endif
-                    </div>
-                </div>
-            </div><!-- End Jadwal Saat Ini Card -->
 
         </div>
 
@@ -127,8 +107,9 @@
 </main><!-- End Main -->
 
 <script>
-    let currentClass = 'A'; // Default class
-    let currentGrade = '10'; // Default grade
+    let currentIndex = 0; // Menyimpan indeks kelas saat ini
+    let currentClasses = []; // Menyimpan kelas yang sesuai dengan tingkat yang dipilih
+    let jadwalPerKelas = {}; // Menyimpan jadwal per kelas
 
     function updateClock() {
         const now = new Date();
@@ -139,57 +120,107 @@
         document.getElementById('clock').innerText = timeString;
     }
 
-    function changeClass(direction) {
-        const classes = ['A', 'B'];
-        const currentIndex = classes.indexOf(currentClass);
-        if (direction === 'right') {
-            currentClass = classes[(currentIndex + 1) % classes.length]; // Next class
+    function fetchJadwal(tingkat, kelas, isCurrent = false) {
+        const url = `/jadwal?tingkat=${tingkat}&kelas=${kelas}`;
+        fetch(url)
+            .then(response => response.json())
+            .then(data => {
+                if (isCurrent) {
+                    updateJadwalSaatIni(data.jadwal);
+                } else {
+                    updateJadwal(data.jadwal);
+                }
+            })
+            .catch(error => console.error('Error fetching jadwal:', error));
+    }
+
+    function updateJadwal(jadwal) {
+        const jadwalList = document.getElementById('jadwal-body');
+        jadwalList.innerHTML = ''; // Kosongkan tabel
+
+        // Reset jadwal per kelas
+        jadwalPerKelas = {};
+
+        if (jadwal.length > 0) {
+            jadwal.forEach(item => {
+                const kelas = item.kelas.nama_kelas;
+                if (!jadwalPerKelas[kelas]) {
+                    jadwalPerKelas[kelas] = [];
+                }
+                jadwalPerKelas[kelas].push(item);
+            });
+            updateJadwalList(); // Tampilkan jadwal kelas pertama
         } else {
-            currentClass = classes[(currentIndex - 1 + classes.length) % classes.length]; // Previous class
+            jadwalList.innerHTML = '<tr><td colspan="4">Tidak ada jadwal untuk hari ini.</td></tr>';
         }
-
-        filterJadwal(currentGrade, currentClass);
-        filterJadwalSaatIni(currentGrade, currentClass);
     }
 
-    function filterJadwal(tingkat, kelas) {
-        fetch(`/jadwal?tingkat=${tingkat}&kelas=${kelas}`)
-            .then(response => response.json())
-            .then(data => {
-                const jadwalList = document.getElementById('jadwal-list');
-                jadwalList.innerHTML = '';
+    function filterJadwal(tingkat) {
+        const rows = document.querySelectorAll('#jadwal-body tr');
+        currentClasses = []; // Reset kelas saat filter
+        rows.forEach(row => {
+            const rowTingkat = row.getAttribute('data-tingkat');
 
-                if (data.jadwal.length > 0) {
-                    data.jadwal.forEach(jadwal => {
-                        jadwalList.innerHTML += `<li><strong>${jadwal.mataPelajaran.nama_mapel} (${jadwal.jam_mulai} - ${jadwal.jam_selesai})</strong><br>Kelas: ${jadwal.kelas.nama_kelas}</li>`;
-                    });
-                } else {
-                  jadwalList.innerHTML = '<p>Tidak ada jadwal untuk hari ini.</p>';
-                }
-            });
+            if (tingkat === 'all' || rowTingkat == tingkat) {
+                row.style.display = ''; // Tampilkan baris
+                currentClasses.push(row); // Tambahkan ke daftar kelas yang sesuai
+            } else {
+                row.style.display = 'none'; // Sembunyikan baris
+            }
+        });
+
+        currentIndex = 0; // Reset indeks saat filter
+        updateCurrentClassName(); // Update nama kelas yang ditampilkan
+
+        // Cek apakah currentClasses tidak kosong
+        if (currentClasses.length > 0) {
+            updateJadwalList(); // Update daftar jadwal
+        } else {
+            document.getElementById('jadwal-body').innerHTML = '<tr><td colspan="4">Tidak ada kelas untuk tingkat ini.</td></tr>';
+        }
     }
 
-    function filterJadwalSaatIni(tingkat, kelas) {
-        fetch(`/jadwal?tingkat=${tingkat}&kelas=${kelas}`)
-            .then(response => response.json())
-            .then(data => {
-                const jadwalList = document.getElementById('jadwal-sekarang-list');
-                jadwalList.innerHTML = '';
-
-                if (data.jadwal.length > 0) {
-                    data.jadwal.forEach(jadwal => {
-                        jadwalList.innerHTML += `<li><strong>${jadwal.mataPelajaran.nama_mapel} (${jadwal.jam_mulai} - ${jadwal.jam_selesai})</strong><br>Kelas: ${jadwal.kelas.nama_kelas}</li>`;
-                    });
-                } else {
-                    jadwalList.innerHTML = '<p>Saat ini tidak ada jadwal yang sedang berlangsung.</p>';
-                }
-            });
+    function updateJadwalList() {
+        const rows = document.querySelectorAll('#jadwal-body tr');
+        rows.forEach(row => {
+            const rowKelas = row.getAttribute('data-kelas');
+            if (currentClasses.length > 0 && rowKelas === currentClasses[currentIndex].getAttribute('data-kelas')) {
+                row.style.display = ''; // Tampilkan kelas yang dipilih
+            } else {
+                row.style.display = 'none'; // Sembunyikan kelas yang tidak dipilih
+            }
+        });
     }
 
-    // Update the clock immediately, and then every second
-    updateClock();
+    function updateCurrentClassName() {
+        const currentClassName = document.getElementById('current-class-name');
+        currentClassName.textContent = currentClasses.length > 0 ? currentClasses[currentIndex].getAttribute('data-kelas') : 'Tidak ada kelas';
+        currentClassName.onclick = changeClassOnClick; // Menambahkan event listener klik
+    }
+
+    function changeClassOnClick() {
+        if (currentClasses.length > 0) {
+            let currentClass = currentClasses[currentIndex].getAttribute('data-kelas');
+            
+            // Cari kelas berikutnya yang berbeda dari kelas saat ini
+            do {
+                currentIndex = (currentIndex + 1) % currentClasses.length;
+            } while (currentClasses[currentIndex].getAttribute('data-kelas') === currentClass);
+            
+            // Update nama kelas dan daftar jadwal
+            updateCurrentClassName();
+            updateJadwalList();
+        }
+    }
+
+    // Update clock setiap detik
     setInterval(updateClock, 1000);
+
+    // Inisialisasi jadwal saat halaman dimuat
+    window.onload = function () {
+        filterJadwal('all'); // Tampilkan semua jadwal saat dimuat
+        fetchJadwal('10'); // Ambil jadwal untuk tingkat 10 dan kelas 10A
+    };
 </script>
 
 @endsection
-

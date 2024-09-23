@@ -15,20 +15,17 @@
 
   <section class="section dashboard">
     <div class="row g-2">
-      <!-- Tombol Tambah Jadwal dihilangkan -->
-      
       <div class="col-12 mb-3">
-        <form method="GET" action="{{ route('home.jadwal.daftar') }}">
+        <form method="GET" action="{{ route('jadwal.daftar') }}">
           <div class="input-group">
             <label for="tahunAjaran" class="form-label me-2">Pilih Tahun Ajaran:</label>
             <select id="tahunAjaran" name="tahun_ajaran" class="form-select" onchange="this.form.submit()">
-  @foreach($tahunAjarans as $tahunAjaran)
-    <option value="{{ $tahunAjaran->id }}" {{ $tahunAjaranId == $tahunAjaran->id ? 'selected' : '' }}>
-      {{ $tahunAjaran->tahun }}
-    </option>
-  @endforeach
-</select>
-
+              @foreach($tahunAjarans as $tahunAjaran)
+                <option value="{{ $tahunAjaran->id }}" {{ $tahunAjaranId == $tahunAjaran->id ? 'selected' : '' }}>
+                  {{ $tahunAjaran->tahun }}
+                </option>
+              @endforeach
+            </select>
           </div>
         </form>
       </div>
@@ -67,7 +64,7 @@
                   </thead>
                   <tbody>
                     @foreach($classJadwals as $jadwal)
-                      <tr class="jadwal-row" data-hari="{{ $jadwal->hari }}">
+                      <tr class="jadwal-row" data-hari="{{ $jadwal->hari }}" data-kelas="{{ $className }}">
                         <td class="col-2 text-center">{{ $jadwal->jam_mulai }} - {{ $jadwal->jam_selesai }}</td>
                         <td class="col-2 text-center">{{ $jadwal->ruangan->nama_ruangan }}</td>
                         <td class="col-2 text-center">{{ $jadwal->mataPelajaran->nama_mapel }}</td>
@@ -77,7 +74,6 @@
                   </tbody>
                 </table>
               </div>
-              <!-- Bagian untuk hapus jadwal dihilangkan -->
             </div>
           @endif
         @endforeach
@@ -93,71 +89,73 @@ let selectedTingkat = null;
 const days = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat'];
 
 function filterJadwal() {
-  const tahunAjaranId = document.getElementById('tahunAjaran').value;
-  console.log('Tahun Ajaran ID:', tahunAjaranId);
+    const jadwalItems = document.querySelectorAll('.jadwal-row');
+    jadwalItems.forEach(item => {
+        const itemKelas = item.getAttribute('data-kelas');
+        const itemTingkat = parseInt(itemKelas.split(' ')[0], 10); // Ambil tingkat dari nama kelas
 
-  const jadwalItems = document.querySelectorAll('.jadwal-item');
-  jadwalItems.forEach(item => {
-    const itemTahunAjaran = item.getAttribute('data-tahun-ajaran');
-    const itemTingkat = parseInt(item.getAttribute('data-tingkat'), 10);
-    console.log('Item Tahun Ajaran:', itemTahunAjaran, 'Item Tingkat:', itemTingkat);
-    
-    if (
-      (!tahunAjaranId || itemTahunAjaran === tahunAjaranId) &&
-      (selectedTingkat === null || itemTingkat === selectedTingkat)
-    ) {
-      item.style.display = 'block';
-    } else {
-      item.style.display = 'none';
-    }
-  });
-
-  filterByDay();
+        if (selectedTingkat === null || itemTingkat === selectedTingkat) {
+            item.style.display = ''; // Menampilkan
+            // Tampilkan kartu kelas hanya jika ada jadwal yang ditampilkan
+            item.closest('.card').style.display = ''; 
+        } else {
+            item.style.display = 'none'; // Menyembunyikan
+            // Jika tidak ada jadwal yang ditampilkan, sembunyikan kartu kelas
+            const card = item.closest('.card');
+            if (!Array.from(card.querySelectorAll('.jadwal-row')).some(row => row.style.display !== 'none')) {
+                card.style.display = 'none';
+            }
+        }
+    });
+    filterByDay(); // Panggil filterByDay untuk menyaring berdasarkan hari
 }
 
 function filterByTingkat(tingkat) {
-  selectedTingkat = tingkat;
-  filterJadwal();
+    selectedTingkat = tingkat;
+    filterJadwal();
 }
 
 function filterByDay() {
-  const jadwalItems = document.querySelectorAll('.jadwal-row');
+    const jadwalItems = document.querySelectorAll('.jadwal-row');
 
-  jadwalItems.forEach(row => {
-    const currentDaySpan = row.closest('.card').querySelector('.current-day');
-    const currentDay = currentDaySpan.textContent;
+    jadwalItems.forEach(row => {
+        const currentDaySpan = row.closest('.card').querySelector('.current-day');
+        const currentDay = currentDaySpan.textContent;
 
-    if (row.getAttribute('data-hari') === currentDay) {
-      row.style.display = ''; // Tampilkan jika hari cocok
-    } else {
-      row.style.display = 'none'; // Sembunyikan jika tidak cocok
-    }
-  });
+        if (row.getAttribute('data-hari') === currentDay) {
+            row.style.display = ''; // Tampilkan jika hari cocok
+        } else {
+            row.style.display = 'none'; // Sembunyikan jika tidak cocok
+        }
+    });
 }
 
-
 function previousDay(button) {
-  const card = button.closest('.card');
-  const currentDaySpan = card.querySelector('.current-day');
-  let currentDayIndex = days.indexOf(currentDaySpan.textContent);
-  currentDayIndex = (currentDayIndex - 1 + days.length) % days.length;
-  currentDaySpan.textContent = days[currentDayIndex];
-  filterByDay();
+    const card = button.closest('.card');
+    const currentDaySpan = card.querySelector('.current-day');
+    let currentDayIndex = days.indexOf(currentDaySpan.textContent);
+    currentDayIndex = (currentDayIndex - 1 + days.length) % days.length;
+    currentDaySpan.textContent = days[currentDayIndex];
+    filterByDay();
 }
 
 function nextDay(button) {
-  const card = button.closest('.card');
-  const currentDaySpan = card.querySelector('.current-day');
-  let currentDayIndex = days.indexOf(currentDaySpan.textContent);
-  currentDayIndex = (currentDayIndex + 1) % days.length;
-  currentDaySpan.textContent = days[currentDayIndex];
-  filterByDay();
+    const card = button.closest('.card');
+    const currentDaySpan = card.querySelector('.current-day');
+    let currentDayIndex = days.indexOf(currentDaySpan.textContent);
+    currentDayIndex = (currentDayIndex + 1) % days.length;
+    currentDaySpan.textContent = days[currentDayIndex];
+    filterByDay();
 }
 
 document.addEventListener('DOMContentLoaded', function() {
-  const tahunAjaranSelect = document.getElementById('tahunAjaran');
-  tahunAjaranSelect.value = '{{ $tahunAjaranId }}';
-  filterJadwal();
+    const tahunAjaranSelect = document.getElementById('tahunAjaran');
+    tahunAjaranSelect.value = '{{ $tahunAjaranId }}';
+    
+    // Set current day to Monday and filter by day
+    const currentDaySpan = document.querySelector('.current-day');
+    currentDaySpan.textContent = 'Senin'; // Set to Monday
+    filterByDay(); // Call to show only Monday's schedule
 });
 </script>
 

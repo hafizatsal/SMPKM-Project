@@ -24,9 +24,14 @@ class TahunAjaranController extends Controller
         return redirect()->route('tahunajaran.daftar')->with('success', 'Tahun Ajaran created successfully.');
     }
 
-    public function hapusTahunAjaran(TahunAjaran $tahunAjaran)
-    {
+    public function hapusTahunAjaran($id)
+{
+    $tahunAjaran = TahunAjaran::find($id);
+    if ($tahunAjaran) {
         $tahunAjaran->delete();
         return redirect()->route('tahunajaran.daftar')->with('success', 'Tahun Ajaran deleted successfully.');
     }
+    return redirect()->route('tahunajaran.daftar')->with('error', 'Tahun Ajaran not found.');
+}
+
 }

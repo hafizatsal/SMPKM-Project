@@ -17,6 +17,7 @@ class KelasTersediaController extends Controller
 
     $kelasTersedia = KelasTersedia::where('tahun_ajaran_id', $tahunAjaranId)
         ->with(['tahunAjaran', 'ruangan', 'kelas'])
+        ->orderByRaw("FIELD(tingkat, 10, 11, 12)") // Mengurutkan berdasarkan tingkat
         ->get(); // Data ini adalah koleksi Eloquent
 
     $tahunAjaran = TahunAjaran::all(); // Koleksi Eloquent

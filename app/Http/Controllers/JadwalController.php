@@ -21,14 +21,14 @@ class JadwalController extends Controller
 
         $kelasTersedia = KelasTersedia::where('tahun_ajaran_id', $tahunAjaranId)->pluck('kelas_id');
 
-        \Log::info('Kelas Tersedia untuk tahun ajaran ID ' . $tahunAjaranId . ':', $kelasTersedia->toArray());
+        Log::info('Kelas Tersedia untuk tahun ajaran ID ' . $tahunAjaranId . ':', $kelasTersedia->toArray());
 
         $jadwals = Jadwal::with(['kelas', 'ruangan', 'mataPelajaran', 'guru'])
             ->whereIn('kelas_id', $kelasTersedia)
             ->where('tahun_ajaran_id', $tahunAjaranId)
             ->get();
 
-        \Log::info('Jadwals untuk tahun ajaran ID ' . $tahunAjaranId . ':', $jadwals->toArray());
+        Log::info('Jadwals untuk tahun ajaran ID ' . $tahunAjaranId . ':', $jadwals->toArray());
 
         $jadwalsGrouped = $jadwals->groupBy('kelas.nama_kelas');
 
@@ -204,48 +204,58 @@ public function updateJadwal(Request $request, $id)
         foreach ($kelasTersedia as $kelasTersediaItem) {
             $kelas = $kelasTersediaItem->kelas;
             $ruangan = $kelasTersediaItem->ruangan;
-
-            Log::info('Memproses kelas:', ['kelas_id' => $kelas->id, 'kelas_nama' => $kelas->nama_kelas]);
-
+        
             foreach ($hariList as $hari) {
                 $sesiWaktuMulai = ($hari === 'Jumat') ? $jumatMulai : $seninKamisMulai;
                 $sesiWaktuSelesai = ($hari === 'Jumat') ? $jumatSelesai : $seninKamisSelesai;
-
+        
                 foreach ($sesiWaktuMulai as $index => $jamMulai) {
                     $jamSelesai = $sesiWaktuSelesai[$index];
+                    
+                    // Cari mata pelajaran dan guru secara acak jika belum ada jadwal
                     $mataPelajaranId = $mataPelajaranIds[array_rand($mataPelajaranIds)];
-
+                    
                     if (!isset($mataPelajaranGuru[$kelas->id][$mataPelajaranId])) {
                         $validGuruIds = GuruMataPelajaran::where('mata_pelajaran_id', $mataPelajaranId)
-                                                        ->pluck('guru_id')
-                                                        ->intersect($guruIds)
-                                                        ->toArray();
+                                                          ->pluck('guru_id')
+                                                          ->intersect($guruIds)
+                                                          ->toArray();
+        
                         if (empty($validGuruIds)) {
-                            Log::error('Tidak ada guru yang valid untuk mata pelajaran ID ' . $mataPelajaranId);
+                            Log::error('Tidak ada guru valid untuk mata pelajaran ID ' . $mataPelajaranId);
                             continue;
                         }
-
+        
+                        // Pilih guru dengan beban jam terdekat
                         $guruId = $this->pilihGuruDenganBebanJamTerdekat($validGuruIds, $guruJam, $bagiBebanJamGuru);
                         $mataPelajaranGuru[$kelas->id][$mataPelajaranId] = $guruId;
                     } else {
                         $guruId = $mataPelajaranGuru[$kelas->id][$mataPelajaranId];
                     }
-
-                    $jadwal = Jadwal::create([
-                        'tahun_ajaran_id' => $tahunAjaranId,
-                        'kelas_id' => $kelas->id,
-                        'ruangan_id' => $ruangan->id,
-                        'mapel_id' => $mataPelajaranId,
-                        'guru_id' => $guruId,
-                        'hari' => $hari,
-                        'jam_mulai' => $jamMulai,
-                        'jam_selesai' => $jamSelesai,
-                        'urutan' => $hari . ' ' . ($index + 1)
-                    ]);
-
-                    $guruJam[$guruId] += $this->hitungDurasiJam($jamMulai, $jamSelesai);
-
-                    Log::info('Jadwal disimpan:', $jadwal->toArray());
+        
+                    // Pastikan tidak ada slot waktu kosong
+                    if (!Jadwal::where([
+                        ['hari', '=', $hari],
+                        ['jam_mulai', '=', $jamMulai],
+                        ['kelas_id', '=', $kelas->id]
+                    ])->exists()) {
+        
+                        // Buat jadwal baru
+                        $jadwal = Jadwal::create([
+                            'tahun_ajaran_id' => $tahunAjaranId,
+                            'kelas_id' => $kelas->id,
+                            'ruangan_id' => $ruangan->id,
+                            'mapel_id' => $mataPelajaranId,
+                            'guru_id' => $guruId,
+                            'hari' => $hari,
+                            'jam_mulai' => $jamMulai,
+                            'jam_selesai' => $jamSelesai,
+                            'urutan' => $hari . ' ' . ($index + 1)
+                        ]);
+        
+                        $guruJam[$guruId] += $this->hitungDurasiJam($jamMulai, $jamSelesai);
+                        Log::info('Jadwal disimpan:', $jadwal->toArray());
+                    }
                 }
             }
         }
